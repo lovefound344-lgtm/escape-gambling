@@ -1,634 +1,749 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>코드명: 단절(DISCONNECT) - 사라진 A를 찾아라</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>낙토 문화 축제 - 사라진 도근이를 찾아라</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- HTML5 QR Code Reader -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- HTML5 QR Code Scanner -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <!-- Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 
   <style>
-    body {
-      background-color: #0b0f19;
-      color: #f3f4f6;
-      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Noto Sans KR", sans-serif;
-      touch-action: manipulation;
-    }
-    .custom-scroll::-webkit-scrollbar { width: 4px; }
-    .custom-scroll::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
-    
-    /* 6번 게임 플래시라이트 효과를 위한 CSS */
-    .flashlight-overlay {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: #000;
-      pointer-events: none;
-      mask-image: radial-gradient(circle 35px at var(--x, 50%) var(--y, 50%), transparent 0%, black 100%);
-      -webkit-mask-image: radial-gradient(circle 35px at var(--x, 50%) var(--y, 50%), transparent 0%, black 100%);
-    }
-
-    /* 7번 카드 게임용 CSS */
-    .memory-card {
-      perspective: 1000px;
-      cursor: pointer;
-    }
-    .memory-card-inner {
-      position: relative;
-      width: 100%; height: 100%;
-      text-align: center;
-      transition: transform 0.6s;
-      transform-style: preserve-3d;
-    }
-    .memory-card.flipped .memory-card-inner {
-      transform: rotateY(180deg);
-    }
-    .memory-card-front, .memory-card-back {
-      position: absolute;
-      width: 100%; height: 100%;
-      backface-visibility: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 0.75rem;
-    }
-    .memory-card-front {
-      background-color: #1e293b; /* 카드 뒷면(로고) */
-      border: 1px solid #334155;
-    }
-    .memory-card-back {
-      background-color: #020617; /* 카드 앞면(내용) */
-      border: 1px solid #06b6d4;
-      transform: rotateY(180deg);
-      padding: 4px;
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body { font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
+    .scan-region-highlight { border-radius: 12px !important; }
+    /* 말풍선 스타일 */
+    .chat-bubble-left::after {
+      content: ''; position: absolute; left: -6px; top: 12px;
+      border-width: 6px 6px 6px 0; border-style: solid;
+      border-color: transparent #334155 transparent transparent;
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between max-w-md mx-auto relative shadow-2xl bg-slate-900 border-x border-slate-800">
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-24">
 
-  <!-- ================= 1. 온보딩 모달 ================= -->
-  <div id="onboardingModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-cyan-500/50 rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
-      <div class="text-4xl mb-2">🚨</div>
-      <h2 class="text-xl font-bold text-cyan-400 mb-1">긴급 수색 지령 (Hard Mode)</h2>
-      <p class="text-xs text-slate-400 mb-4">코드명: 단절 (DISCONNECT)</p>
-      
-      <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 text-left text-xs leading-relaxed text-slate-300 mb-5 space-y-2">
-        <p>A가 남긴 8개의 단서는 강력한 암호와 퍼즐로 보호되어 있습니다. <strong>논리, 기억력, 감각</strong>을 총동원해야만 해독할 수 있습니다.</p>
-        <p class="text-rose-400">※ 주의: 각 게임은 실패 시 처음부터 다시 시작해야 하는 가혹한 규칙이 적용되어 있습니다.</p>
+  <!-- 상단 네비게이션 헤더 -->
+  <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex justify-between items-center">
+    <div>
+      <span class="text-xs font-semibold tracking-wider text-rose-500 uppercase">CASE FILE #2026</span>
+      <h1 class="text-base font-bold text-slate-100 flex items-center gap-1.5">
+        사라진 도근이를 찾아라
+      </h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <div id="timerDisplay" class="bg-slate-800 border border-slate-700 text-amber-400 font-mono text-sm px-2.5 py-1 rounded-md">
+        00:00
+      </div>
+      <button onclick="resetDataPrompt()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 px-2 py-1 rounded border border-slate-700" title="초기화">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 메인 컨테이너 -->
+  <main class="max-w-md mx-auto px-4 py-4 space-y-4">
+
+    <!-- 학급 등록 모달 (최초 접속 시) -->
+    <div id="classModal" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-sm space-y-4 text-center">
+        <div class="w-14 h-14 bg-rose-500/20 text-rose-500 rounded-full flex items-center justify-center mx-auto text-2xl">
+          <i class="fa-solid fa-magnifying-glass-arrow-right"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold">수사 본부 학급 등록</h2>
+          <p class="text-xs text-slate-400 mt-1">참여하는 학급(팀명)을 입력하세요.<br>(예: 2학년 3반 / 1학년 5반)</p>
+        </div>
+        <input type="text" id="classNameInput" placeholder="예: 2-3" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-center text-lg font-bold text-white focus:outline-none focus:border-rose-500">
+        <button onclick="saveClassName()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl transition">
+          수사 개시하기
+        </button>
+      </div>
+    </div>
+
+    <!-- 사건 개요 카드 -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-bold text-slate-400">수사 대상: 김도근 (중학생)</span>
+        <span id="displayClassName" class="text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full">학급 미지정</span>
+      </div>
+      <p class="text-xs leading-relaxed text-slate-300">
+        평소 활발하고 성실했던 도근이가 갑자기 등교하지 않고 연락이 두절되었습니다.
+        8개의 단서를 수집하여 도근이가 <strong>왜 사라졌는지, 어디로 갔는지, 배후 인물은 누구인지</strong> 밝혀내세요!
+      </p>
+    </section>
+
+    <!-- 단서 수집 진행 바 -->
+    <div class="flex justify-between items-center px-1">
+      <span class="text-xs font-bold text-slate-300">단서 수집 현황</span>
+      <span id="clueProgressText" class="text-xs font-bold text-rose-400 font-mono">0 / 8 수집 완료</span>
+    </div>
+
+    <!-- 8개 단서 카드 그리드 -->
+    <div class="grid grid-cols-2 gap-2.5" id="clueGrid">
+      <!-- JS로 8개 단서 카드 동적 렌더링 -->
+    </div>
+
+    <!-- 최종 추리 결정 버튼 (8개 클리어 시 활성화) -->
+    <div class="pt-2">
+      <button id="finalDeductionBtn" onclick="openFinalModal()" disabled class="w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition duration-300 bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed">
+        <i class="fa-solid fa-brain"></i>
+        <span>최종 추리 및 결론 도출 (잠김)</span>
+      </button>
+      <p class="text-[11px] text-center text-slate-500 mt-1.5">8개의 단서를 모두 해금하면 최종 수사 결론을 제출할 수 있습니다.</p>
+    </div>
+
+  </main>
+
+  <!-- 하단 고정 액션 바: QR 및 코드 입력 -->
+  <div class="fixed bottom-0 left-0 right-0 z-20 bg-slate-900/95 border-t border-slate-800 p-3 max-w-md mx-auto flex gap-2">
+    <button onclick="openScannerModal()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-rose-950">
+      <i class="fa-solid fa-qrcode text-lg"></i>
+      <span>QR 단서 스캔</span>
+    </button>
+    <button onclick="openManualCodeModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-1.5">
+      <i class="fa-solid fa-key"></i>
+      <span>암호 입력</span>
+    </button>
+  </div>
+
+  <!-- ================= [MODALS] ================= -->
+
+  <!-- 1. QR 스캐너 모달 -->
+  <div id="qrModal" class="fixed inset-0 z-50 bg-black/90 hidden flex flex-col justify-center items-center p-4">
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+      <div class="p-3.5 bg-slate-800 flex justify-between items-center border-b border-slate-700">
+        <span class="text-xs font-bold text-rose-400"><i class="fa-solid fa-camera mr-1"></i> QR 코드 스캐너</span>
+        <button onclick="closeScannerModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="p-4">
+        <div id="reader" class="overflow-hidden rounded-xl bg-black border border-slate-800"></div>
+        <p class="text-[11px] text-center text-slate-400 mt-3">부스 현장에 부착된 미션 QR 코드를 비춰주세요.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 암호 수동 입력 모달 (2~7번 미션 및 QR 대체용) -->
+  <div id="codeModal" class="fixed inset-0 z-50 bg-black/80 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-sm space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="font-bold text-sm text-slate-200 flex items-center gap-1.5">
+          <i class="fa-solid fa-unlock-keyhole text-rose-400"></i> 미션 클리어 코드 입력
+        </h3>
+        <button onclick="closeManualCodeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        미니게임을 해결하여 획득한 암호 코드를 입력하세요.<br>(대소문자 구분 없음)
+      </p>
+      <input type="text" id="manualCodeInput" placeholder="암호 코드 입력" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-center text-lg tracking-wider font-mono uppercase text-white focus:outline-none focus:border-rose-500">
+      <div class="flex gap-2">
+        <button onclick="submitManualCode()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl transition">
+          단서 해금 확인
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 상세 단서 뷰 모달 (각 단서 클릭 시 오픈) -->
+  <div id="clueDetailModal" class="fixed inset-0 z-50 bg-black/85 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+      <!-- 헤더 -->
+      <div class="p-3.5 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <span id="detailBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">단서 1</span>
+          <h3 id="detailTitle" class="text-sm font-bold text-slate-100">단서 제목</h3>
+        </div>
+        <button onclick="closeDetailModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <!-- 동적 컨텐츠 뷰 -->
+      <div id="detailBody" class="p-4 overflow-y-auto space-y-3 text-xs leading-relaxed text-slate-300">
+        <!-- JS로 동적 주입 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 최종 9단계 추리 결정 모달 -->
+  <div id="finalModal" class="fixed inset-0 z-50 bg-black/90 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-900 border border-rose-500/50 rounded-2xl w-full max-w-md my-auto p-5 space-y-5 shadow-2xl">
+      <div class="text-center space-y-1">
+        <span class="text-xs font-bold text-rose-400 tracking-wider uppercase">FINAL DEDUCTION</span>
+        <h2 class="text-lg font-black text-white">최종 수사 결과 보고서</h2>
+        <p class="text-[11px] text-slate-400">8개의 단서를 분석하여 도근이 실종의 전말을 확정하세요.</p>
       </div>
 
-      <div class="mb-4 text-left">
-        <label class="block text-xs font-semibold text-slate-400 mb-1.5">수색팀(참가자) 이름</label>
-        <input id="teamNameInput" type="text" placeholder="예: 2학년 3반 1조" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-cyan-400" />
+      <!-- 질문 1 -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-slate-200">1. 도근이는 왜 학교와 집을 나갔는가? (원인)</label>
+        <select id="answerQ1" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-rose-500">
+          <option value="">선택하세요</option>
+          <option value="A">단순 성적 스트레스 및 부모님의 학업 압박</option>
+          <option value="B">온라인 불법 도박 중독 및 이에 따른 학교폭력(갈취/위협)</option>
+          <option value="C">친구들과의 단순 오해로 인한 가출</option>
+          <option value="D">게임 아이템 사기를 당해 보복하기 위해</option>
+          <option value="E">피아노 학원 손 골절 부상에 대한 반발</option>
+        </select>
       </div>
 
-      <button onclick="startInvestigation()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg transition active:scale-95 text-sm">
-        사건 수색 시작하기
+      <!-- 질문 2 -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-slate-200">2. 도근이의 탈선과 빚 독촉에 영향을 준 핵심 인물은?</label>
+        <select id="answerQ2" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-rose-500">
+          <option value="">선택하세요</option>
+          <option value="A">도박 사이트를 처음 추천한 친구 B & 고리 대금 갈취를 한 C</option>
+          <option value="B">피아노 학원에서 함께 다녔던 동훈이</option>
+          <option value="C">항상 평균 성적을 요구하던 담임선생님</option>
+          <option value="D">농구를 함께 하던 재연이</option>
+          <option value="E">인터넷 카페 운영자</option>
+        </select>
+      </div>
+
+      <!-- 질문 3 -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-slate-200">3. 도근이는 현재 어디에 은둔해 있는가? (은신처)</label>
+        <select id="answerQ3" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-rose-500">
+          <option value="">선택하세요</option>
+          <option value="A">자주 다니던 시내 단골 PC방 구석자리</option>
+          <option value="B">학교 체육관 뒤 농구장 벤치</option>
+          <option value="C">자신을 끝까지 숨겨주고 지켜준 PC방 친구(준혁)의 집</option>
+          <option value="D">시 청소년 상담복지센터 쉼터</option>
+          <option value="E">부안 모항 해나루 근처</option>
+        </select>
+      </div>
+
+      <div class="pt-2 flex gap-2">
+        <button onclick="closeFinalModal()" class="flex-1 bg-slate-800 text-slate-300 py-3 rounded-xl text-xs font-bold">취소</button>
+        <button onclick="submitFinalDeduction()" class="flex-2 bg-rose-600 hover:bg-rose-500 text-white py-3 px-6 rounded-xl text-xs font-bold">수사 결론 제출</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 엔딩 및 클리어 축하 화면 -->
+  <div id="endingModal" class="fixed inset-0 z-50 bg-black/95 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl w-full max-w-md p-6 text-center space-y-4 shadow-2xl">
+      <div class="w-16 h-16 bg-amber-500/20 text-amber-400 rounded-full flex items-center justify-center mx-auto text-3xl">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <div>
+        <span class="text-xs font-bold text-emerald-400 tracking-wider">CASE CLOSED - 수사 종결</span>
+        <h2 class="text-xl font-black text-white mt-1">도근이 구출 성공!</h2>
+      </div>
+      <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-4 text-left space-y-2">
+        <div class="flex justify-between text-xs">
+          <span class="text-slate-400">수사 학급:</span>
+          <span id="finalClassDisplay" class="font-bold text-white">-</span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-slate-400">총 소요 시간:</span>
+          <span id="finalTimeDisplay" class="font-bold text-amber-400 font-mono text-sm">-</span>
+        </div>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed text-left bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+        도근이는 불법 도박의 늪에 빠져 친구 C의 불법 대출 협박에 갇혀 있었습니다. 
+        친구 준혁의 도움으로 은둔해 있던 도근이를 여러분의 추리로 안전하게 찾아내어 
+        전문 상담기관(1336)과 부모님의 품으로 구조했습니다.
+      </p>
+      <button onclick="location.reload()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition">
+        확인 (진행요원 인증)
       </button>
     </div>
   </div>
 
-  <!-- ================= 상단 헤더 & 대시보드 ================= -->
-  <header class="p-4 bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-30">
-    <div class="flex items-center justify-between mb-2">
-      <div class="flex items-center space-x-2">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-        <span id="teamNameDisplay" class="font-bold text-sm text-slate-200">수색 본부</span>
-      </div>
-      <div class="flex items-center space-x-3 text-xs">
-        <span id="timerDisplay" class="font-mono bg-slate-800 text-cyan-400 px-2.5 py-1 rounded-md border border-slate-700">00:00</span>
-        <button onclick="confirmResetData()" class="text-slate-500 hover:text-red-400 transition text-xs">🔄 초기화</button>
-      </div>
-    </div>
-    <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700/60">
-      <div id="progressBar" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full transition-all duration-500" style="width: 0%;"></div>
-    </div>
-    <div class="flex justify-between items-center mt-1.5 text-[11px] text-slate-400">
-      <span>수집된 단서 진행률</span>
-      <span id="progressText" class="font-bold text-cyan-400">0 / 8</span>
-    </div>
-  </header>
-
-  <main class="flex-1 p-4 overflow-y-auto custom-scroll space-y-4">
-    <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/80 rounded-2xl p-4 shadow-lg">
-      <h1 class="text-base font-bold text-slate-100 mb-1">A의 은둔 공간 조사 파일</h1>
-      <p class="text-xs text-slate-400 leading-relaxed">하단의 [QR 스캔] 버튼을 눌러 각 구역의 어려운 퍼즐을 해제하세요.</p>
-    </div>
-    <div class="grid grid-cols-2 gap-2.5" id="clueGrid"></div>
-  </main>
-
-  <!-- ================= 하단 액션 바 ================= -->
-  <footer class="p-4 bg-slate-900/95 backdrop-blur border-t border-slate-800 grid grid-cols-2 gap-3 sticky bottom-0 z-30">
-    <button onclick="openScannerModal()" class="py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-100 font-bold flex items-center justify-center space-x-2 text-sm shadow-md transition active:scale-95">
-      <span>📷</span><span>QR 스캔</span>
-    </button>
-    <button id="finalQuizBtn" onclick="openFinalQuizModal()" disabled class="py-3 px-4 bg-slate-800/50 border border-slate-800 text-slate-500 rounded-xl font-bold flex items-center justify-center space-x-2 text-sm transition cursor-not-allowed">
-      <span>🚨</span><span>최종 퀴즈 풀기</span>
-    </button>
-  </footer>
-
-  <!-- ================= QR 스캐너 모달 ================= -->
-  <div id="scannerModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-4 hidden">
-    <div class="flex justify-between items-center text-slate-200 py-2">
-      <span class="font-bold text-sm">📷 부스 QR 코드 스캔</span>
-      <button onclick="closeScannerModal()" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 text-slate-400 font-bold">✕</button>
-    </div>
-    <div class="flex-1 flex flex-col items-center justify-center my-2">
-      <div id="qr-reader" class="w-full max-w-xs rounded-2xl overflow-hidden border-2 border-dashed border-cyan-500/60 bg-slate-950"></div>
-    </div>
-    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center">
-      <div class="flex space-x-2">
-        <input id="manualClueInput" type="number" min="1" max="8" placeholder="테스트용 번호(1~8) 직접 입력" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100" />
-        <button onclick="submitManualClue()" class="px-4 py-1.5 bg-cyan-700 rounded-lg text-xs font-bold text-white">열기</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= 미니게임 플레이 모달 ================= -->
-  <div id="miniGameModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-cyan-500/50 rounded-2xl p-5 w-full max-w-sm shadow-2xl relative flex flex-col max-h-[90vh]">
-      <button onclick="closeMiniGameModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
-      <div class="mb-2">
-        <span id="gameModalStage" class="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800"></span>
-        <h3 id="gameModalTitle" class="text-base font-bold text-slate-100 mt-1"></h3>
-      </div>
-      <p id="gameModalMission" class="text-[11px] text-amber-300 bg-amber-950/30 p-2.5 rounded-lg mb-3"></p>
-      
-      <div id="gamePlayContainer" class="flex-1 overflow-y-auto custom-scroll pr-1 py-1"></div>
-
-      <div id="clueAcquireArea" class="hidden mt-3 pt-3 border-t border-slate-800 space-y-2">
-        <div class="bg-emerald-950/50 border border-emerald-700/60 rounded-xl p-3 text-xs text-emerald-200">
-          <div class="font-bold flex items-center mb-1">🎉 단서 획득!</div>
-          <p id="acquiredClueText" class="text-[11px] text-slate-300"></p>
-        </div>
-        <button onclick="saveAndCollectClue()" class="w-full py-2.5 bg-emerald-600 text-white font-bold rounded-xl text-xs">단서 가방에 저장하기</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= 최종 퀴즈 및 엔딩 모달 (생략: 기존 코드와 동일) ================= -->
-  <div id="finalQuizModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-amber-500/60 rounded-2xl p-6 w-full max-w-sm">
-      <button onclick="closeFinalQuizModal()" class="absolute top-4 right-4 text-slate-400">✕</button>
-      <div class="text-center mb-4 text-amber-300 font-bold"><div class="text-3xl mb-2">🆘</div>최종 9단계: 구조 신호 발신</div>
-      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-300 mb-4">
-        A를 일상으로 되돌리기 위해 우리가 눌러야 할 대한민국 청소년 도박문제 헬프라인 전화번호(4자리 숫자)는?
-      </div>
-      <input id="finalQuizAnswerInput" type="text" maxlength="4" placeholder="4자리 숫자" class="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-4 py-3 text-center text-xl font-bold tracking-widest text-amber-300 mb-2" />
-      <p id="quizErrorMsg" class="text-xs text-rose-400 text-center mb-4 hidden">⚠️ 번호가 틀렸습니다.</p>
-      <button onclick="submitFinalQuizAnswer()" class="w-full py-3 bg-amber-600 font-bold rounded-xl text-sm">구조 신호 전송</button>
-    </div>
-  </div>
-
-  <div id="endingModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border-2 border-emerald-400 rounded-3xl p-6 w-full max-w-sm text-center">
-      <div class="text-5xl mb-2">🎉</div>
-      <h2 class="text-2xl font-black text-slate-100 mt-2">방탈출 성공!</h2>
-      <div class="my-5 bg-slate-950 border border-slate-800 rounded-2xl p-4 text-left space-y-2.5">
-        <div class="flex justify-between text-xs pb-2 border-b border-slate-800"><span class="text-slate-400">참가팀명</span><strong id="certTeamName" class="text-emerald-400 text-sm"></strong></div>
-        <div class="flex justify-between text-xs pb-2 border-b border-slate-800"><span class="text-slate-400">클리어 시간</span><strong id="certClearTime" class="text-slate-200 text-sm"></strong></div>
-      </div>
-      <button onclick="closeEndingModal()" class="w-full py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs">창 닫기</button>
-    </div>
-  </div>
-
+  <!-- ================= [SCRIPT LOGIC] ================= -->
   <script>
-    const CLUES_DATA = [
-      { id: 1, title: "숨은 함정 찾기", stage: "1단계: 호기심", icon: "🎣", mission: "아래 9개의 게시물 중 '불법 도박(대리입금, 꽁머니 등)'을 유도하는 광고 4개를 오차 없이 정확히 찾아내세요. 1번이라도 틀리면 초기화됩니다.", clueText: "단서 1: '꽁머니' 미끼로 도박을 시작했습니다." },
-      { id: 2, title: "조작된 알고리즘 해킹", stage: "2단계: 조작", icon: "🪜", mission: "사설 도박장 관리자는 '유저들이 돈을 가장 많이 건 쪽'을 무조건 지게 만듭니다. 3번의 배팅 상황에서 관리자가 승리하게 만들 결과(홀/짝)를 예측하세요.", clueText: "단서 2: 사설 도박은 100% 조작된 사기입니다." },
-      { id: 3, title: "블라인드 타임어택", stage: "3단계: 착각", icon: "⏱️", mission: "시작 후 3초 뒤 타이머가 사라집니다. 감각에 의존해 정확히 '7.70초 ~ 7.85초' 사이에 STOP을 누르세요!", clueText: "단서 3: '내가 통제할 수 있다'는 것은 뇌의 착각입니다." },
-      { id: 4, title: "악덕 사채업자의 장부", stage: "4단계: 대출", icon: "💸", mission: "원금 5만원. 이자는 매일 1만원. 지각비는 매시간 5천원입니다. A는 돈을 빌린 지 정확히 3일(72시간) 하고도 5시간이 더 늦었습니다. 갚아야 할 총액을 입력하세요.", clueText: "단서 4: 순식간에 불어나는 불법 대리입금의 덫." },
-      { id: 5, title: "음성 사서함 암호 해독", stage: "5단계: 고립", icon: "📵", mission: "숫자 야구(Bulls and Cows) 룰입니다. 0~9 중 중복 없는 3자리 비밀번호를 10번 안에 맞추세요. (S=숫자와 자리 일치, B=숫자만 일치)", clueText: "단서 5: 죄책감에 부모님 연락을 모두 차단했습니다." },
-      { id: 6, title: "어둠 속의 진실", stage: "6단계: 현실 도피", icon: "🔦", mission: "어두운 방 안을 터치해 조명(플래시)을 움직여 방 구석구석에 숨겨진 4개의 암호 조각 숫자를 찾아 순서대로 입력하세요.", clueText: "단서 6: 방 안에서 1336이라는 숫자를 맴돌았습니다." },
-      { id: 7, title: "혼돈의 카드 기억력", stage: "7단계: 골든타임", icon: "🧩", mission: "12장의 카드를 뒤집어 같은 문양이 그려진 6쌍의 카드를 모두 맞추세요.", clueText: "단서 7: 도박 중독은 질병이며 전문 치료가 필요합니다." },
-      { id: 8, title: "최종 잠금 해제 논리", stage: "8단계: 구조", icon: "🗝️", mission: "앞선 게임의 결과를 조합해 4자리 다이얼을 푸세요. (힌트: 1번 게임 정답수 / 4번 게임의 지각시간 / 4번 게임의 날짜수 / 7번 게임의 카드 쌍 개수)", clueText: "단서 8: A를 구할 최종 번호는 1336입니다." }
+    // ------------------------------------------------------
+    // 1. 단서 데이터베이스 (기획서 기반)
+    // ------------------------------------------------------
+    const CLUE_CONFIG = [
+      {
+        id: 1,
+        title: "운동장 & 농구장 조사",
+        unlockType: "QR",
+        code: "BASKETBALL_3GOAL", // QR 텍스트 또는 수동코드
+        desc: "체육관 농구장 주변을 조사하여 도근이의 소지품을 발견했습니다.",
+        content: `
+          <div class="space-y-3">
+            <div class="p-2.5 bg-slate-800 rounded-lg border border-slate-700">
+              <span class="font-bold text-amber-400">① 터진 농구공:</span> 날카로운 것에 찔려 터진 흔적이 있다. 격한 다툼이 있었던 것 같다.
+            </div>
+            <div class="p-2.5 bg-slate-800 rounded-lg border border-slate-700">
+              <span class="font-bold text-amber-400">② 한 짝만 남은 슬리퍼:</span> 급하게 도망치듯 자리를 벗어난 정황.
+            </div>
+            <div class="p-2.5 bg-slate-800 rounded-lg border border-slate-700">
+              <span class="font-bold text-amber-400">③ 볼펜:</span> 몸체에 <em>'당진시 청소년상담복지센터'</em> 문구가 인쇄되어 있다.
+            </div>
+            <div class="p-2.5 bg-slate-800 rounded-lg border border-rose-500/30 bg-rose-950/20">
+              <span class="font-bold text-rose-400">④ 구겨진 전단지:</span> <em>"레드불 미니게임... 신규 가입 시 첫충 10% 보너스 즉시 지급"</em> 불법 사설 도박 홍보지다!
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 2,
+        title: "도근이의 방 현장 조사",
+        unlockType: "CODE",
+        code: "TRUTH2026", // 2번 기출문제 풀이 정답 코드
+        desc: "도근이의 책상과 방 안 물건들을 정밀 수색했습니다.",
+        content: `
+          <div class="space-y-3">
+            <div class="p-2.5 bg-slate-800 rounded-lg border border-slate-700">
+              <span class="font-bold text-cyan-400">📌 포스트잇:</span> "이번 기말시험 전 과목 평균 이상 무조건 유지하기!" (학업 압박 흔적)
+            </div>
+            <div class="p-2.5 bg-slate-800 rounded-lg border border-slate-700">
+              <span class="font-bold text-cyan-400">📅 스터디 플래너:</span> 빼곡하던 일정이 지난주부터 완전히 비어있다.
+            </div>
+            <div class="p-2.5 bg-slate-800 rounded-lg border border-slate-700">
+              <span class="font-bold text-cyan-400">🥫 레드불 빈 캔:</span> 책상 구석에 에너지 음료 캔이 수북하게 쌓여 있다.
+            </div>
+            <div class="p-2.5 bg-slate-800 rounded-lg border border-rose-500/40 bg-rose-950/20">
+              <span class="font-bold text-rose-400">📝 찢겨진 메모지:</span><br>
+              <em>"1만 충전 → 200만 환전 실패... 2만 충전 → 400만? 그럼 100만은?... -500,000원 손실. 매판 10% 지각비 = 하루 5만 원... 어떡하지... 돈을 어디서 구하지..."</em>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 3,
+        title: "영어학원 친구 '재연' 심문",
+        unlockType: "CODE",
+        code: "CROSSWORD_ENG", // 3번 크로스퍼즐 정답
+        desc: "함께 영어학원을 다니고 농구를 자주 하던 친구 재연이의 증언입니다.",
+        content: `
+          <div class="space-y-2">
+            <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 space-y-2">
+              <p><strong>Q. 최근 도근이의 상태는 어땠나요?</strong></p>
+              <p class="text-slate-300">"최근 중간고사 끝나고 영어가 생각보다 잘 안 나와서 불안해했어요. 손톱을 피가 날 때까지 물어뜯더라고요."</p>
+            </div>
+            <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 space-y-2">
+              <p><strong>Q. 농구장에서 무슨 일이 있었나요?</strong></p>
+              <p class="text-slate-300">"같이 농구하다가 도근이가 갑자기 발작하듯 화를 내면서 공을 걷어찼는데 펜스에 박혀 터졌어요. 최근에 저한테 돈 좀 빌려달라고 해서 3만 원 빌려준 적도 있어요."</p>
+            </div>
+            <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 space-y-2">
+              <p><strong>Q. 다른 친구들과의 관계는?</strong></p>
+              <p class="text-slate-300">"친구 <span class='text-rose-400 font-bold'>'C'</span>랑 심하게 다퉜다고 들었어요. 인스타 스토리에 우울하다는 글도 계속 올렸고요. 피아노 학원은 곧 끊는다고 했어요."</p>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 4,
+        title: "피아노 학원 친구 '동훈' 심문",
+        unlockType: "CODE",
+        code: "MUSIC_HERO", // 4번 음악 맞추기 정답
+        desc: "같은 피아노 학원에 다니는 친구 동훈이의 증언 기록입니다.",
+        content: `
+          <div class="space-y-2">
+            <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+              <p class="text-slate-300">1. "중간고사 끝난 직후엔 평균 올랐다고 기분 좋아했어요. 그런데 며칠 뒤 손을 다쳤다면서 학원을 안 나오더라고요."</p>
+            </div>
+            <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+              <p class="text-slate-300">2. "학원 수업 중에 모르는 번호로 온 전화를 받더니 사색이 돼서 가방도 두고 급하게 뛰쳐나간 적이 있어요."</p>
+            </div>
+            <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+              <p class="text-slate-300">3. "평소 레드불을 달고 살았고, 저한테 자기가 아끼던 자전거를 헐값에 살 생각 없냐고 물어봤어요. 돈이 엄청 급해 보였습니다."</p>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 5,
+        title: "PC방 친구 '준혁' 심문",
+        unlockType: "CODE",
+        code: "JUMP_ESCAPE", // 5번 점프맵 클리어 코드
+        desc: "평소 PC방을 함께 자주 가던 절친 준혁이의 증언입니다.",
+        content: `
+          <div class="space-y-2">
+            <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+              <p class="text-slate-300">1. "한동안 씀씀이가 엄청 커졌다가 최근엔 돈이 없다면서 PC방도 같이 안 갔어요. 저한테도 몇 번 돈을 빌려갔고요."</p>
+            </div>
+            <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+              <p class="text-slate-300">2. "인스타 스토리에 자기한테 이상한 사이트 알려준 <span class='text-amber-400 font-bold'>'B'</span>를 원망하는 글을 쓰더라고요."</p>
+            </div>
+            <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+              <p class="text-slate-300">3. "게임 아이템 강화하다 실패했다고 키보드를 부순 적도 있어요. 그리고 <span class='text-rose-400 font-bold'>C</span>가 매일 돈 갚으라고 협박해서 미치겠다고 울었어요..."</p>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 6,
+        title: "도근이의 PC 컴퓨터 조사",
+        unlockType: "CODE",
+        code: "WIRE_CONNECT", // 6번 전선연결 퍼즐 코드
+        desc: "도근이 방 컴퓨터의 웹 브라우저 히스토리와 접속 기록을 복원했습니다.",
+        content: `
+          <div class="space-y-3 font-mono">
+            <div class="p-3 bg-black rounded-lg border border-slate-800 text-[11px] space-y-1">
+              <div class="text-slate-500">[접속 로그 기록]</div>
+              <div class="text-rose-400">> 01:23 AM | xxx-ladder77.com (사설 도박 사다리/바카라) - 입금 50,000원</div>
+              <div class="text-rose-400">> 02:45 AM | xxx-ladder77.com - [환전 신청 거절: VIP 등급 미달]</div>
+              <div class="text-amber-400">> 03:10 AM | 네이버 검색: '급전 대리입금 지각비 연체 처벌'</div>
+              <div class="text-amber-400">> 03:40 AM | 네이버 검색: '부모님 모르게 빚 갚는 법'</div>
+              <div class="text-emerald-400">> 05:00 AM | 한국도박문제예방치유원 (접속 후 창 닫음)</div>
+            </div>
+            <p class="text-slate-300 text-xs">불법 도박 사이트의 먹튀와 사채 대리입금 지각비에 극도로 몰려 검색한 흔적이 역력합니다.</p>
+          </div>
+        `
+      },
+      {
+        id: 7,
+        title: "도근이의 스마트폰 메신저 조사",
+        unlockType: "CODE",
+        code: "SENTENCE_FOUND", // 7번 문장찾기 퍼즐 코드
+        desc: "메신저 앱(카카오톡)에서 복구된 대화 내역입니다.",
+        content: `
+          <div class="space-y-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <!-- 메시지 1 -->
+            <div class="bg-slate-800/80 p-2.5 rounded-lg border-l-4 border-amber-400">
+              <span class="text-[10px] text-amber-400 font-bold">[엄마와의 대화]</span>
+              <p class="mt-1">"도근아, 이번 시험 평균 90점 안 넘으면 학원 다 끊고 휴대폰 압수야. 똑바로 해."</p>
+            </div>
+            <!-- 메시지 2 -->
+            <div class="bg-slate-800/80 p-2.5 rounded-lg border-l-4 border-rose-500">
+              <span class="text-[10px] text-rose-400 font-bold">[친구 C의 협박]</span>
+              <p class="mt-1">"원금 10만 원은 갚았어도 지각비 하루 2만 원씩 5일 밀렸으니까 10만 원 더 보내라. 오늘 6시까지 안 보내면 너희 부모님이랑 학교 게시판에 다 뿌린다."</p>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 8,
+        title: "인스타그램 계정 & 스토리 조사",
+        unlockType: "QR",
+        code: "PHOTO_FOURCUT", // 8번 네컷사진 QR
+        desc: "비공개 전환 직전 캡처된 도근이의 SNS 스토리 기록입니다.",
+        content: `
+          <div class="space-y-3">
+            <div class="bg-gradient-to-tr from-amber-950/40 via-rose-950/40 to-slate-900 p-3.5 rounded-xl border border-rose-500/30">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="w-6 h-6 rounded-full bg-rose-500 flex items-center justify-center text-[10px] font-bold">D</div>
+                <span class="font-bold text-slate-200">@dokeun_00</span>
+                <span class="text-[10px] text-slate-500">2일 전</span>
+              </div>
+              <p class="text-xs text-rose-200 bg-black/40 p-2.5 rounded-lg">
+                "B 너 때문에 내 인생 다 망가졌어. C는 집 앞까지 찾아온다 그러고... 어디든 숨고 싶다. 미안해 엄마..."
+              </p>
+            </div>
+            <div class="p-2.5 bg-slate-800 rounded-lg text-slate-300 text-xs">
+              📌 <strong>결정적 단서:</strong> 친구 준혁(D)의 최근 게시물 댓글: <br>
+              <em>"도근아 형 방 따뜻하니까 딴 생각 말고 문 잠그고 있어라. 라면 사갈게."</em>
+            </div>
+          </div>
+        `
+      }
     ];
 
-    let gameState = { teamName: "", startTime: null, cluesFound: [], isFinished: false, clearDuration: "00:00" };
-    let timerInterval = null, html5QrCode = null, currentPlayingId = null;
+    // ------------------------------------------------------
+    // 2. 상태 관리 (LocalStorage)
+    // ------------------------------------------------------
+    let gameState = {
+      className: "",
+      startTime: null,
+      elapsedSeconds: 0,
+      unlockedClues: [],
+      isFinished: false
+    };
 
-    // 미니게임 전용 변수들
-    let gSwInterval = null, gSwStartTime = 0, gSwRunning = false, gSwHidden = false;
-    let mastermindAnswer = [], mastermindTries = 0;
-    let memoryCards = [], memoryFlipped = [], memoryMatched = 0;
+    let timerInterval = null;
+    let html5QrCode = null;
 
     window.addEventListener("DOMContentLoaded", () => {
-      const saved = localStorage.getItem("disconnect_hard_state");
-      if (saved) try { gameState = JSON.parse(saved); } catch (e) {}
+      loadState();
       renderClueGrid();
-      updateDashboardUI();
-      if (!gameState.teamName) document.getElementById("onboardingModal").classList.remove("hidden");
-      else startTimer();
+      checkAllCluesUnlocked();
+
+      if (!gameState.className) {
+        document.getElementById("classModal").classList.remove("hidden");
+      } else {
+        document.getElementById("displayClassName").innerText = gameState.className;
+        startTimer();
+      }
     });
 
-    function saveState() { localStorage.setItem("disconnect_hard_state", JSON.stringify(gameState)); }
-    function startInvestigation() {
-      const input = document.getElementById("teamNameInput").value.trim();
-      if(!input) return alert("이름을 입력하세요!");
-      gameState.teamName = input; gameState.startTime = Date.now(); saveState();
-      document.getElementById("onboardingModal").classList.add("hidden");
-      updateDashboardUI(); startTimer();
-    }
-    function startTimer() {
-      if(timerInterval) clearInterval(timerInterval);
-      timerInterval = setInterval(() => {
-        if(!gameState.startTime || gameState.isFinished) return;
-        const d = Math.floor((Date.now() - gameState.startTime) / 1000);
-        document.getElementById("timerDisplay").innerText = `${String(Math.floor(d/60)).padStart(2,"0")}:${String(d%60).padStart(2,"0")}`;
-      }, 1000);
+    function loadState() {
+      const saved = localStorage.getItem("dokeun_case_state");
+      if (saved) {
+        try {
+          gameState = JSON.parse(saved);
+        } catch (e) {
+          console.error("State parse error", e);
+        }
+      }
     }
 
+    function saveState() {
+      localStorage.setItem("dokeun_case_state", JSON.stringify(gameState));
+      renderClueGrid();
+      checkAllCluesUnlocked();
+    }
+
+    function saveClassName() {
+      const val = document.getElementById("classNameInput").value.trim();
+      if (!val) {
+        alert("학급 또는 팀 이름을 입력해주세요!");
+        return;
+      }
+      gameState.className = val;
+      gameState.startTime = Date.now();
+      saveState();
+      document.getElementById("displayClassName").innerText = val;
+      document.getElementById("classModal").classList.add("hidden");
+      startTimer();
+    }
+
+    // ------------------------------------------------------
+    // 3. 타이머 시스템
+    // ------------------------------------------------------
+    function startTimer() {
+      if (timerInterval || gameState.isFinished) return;
+      timerInterval = setInterval(() => {
+        gameState.elapsedSeconds++;
+        updateTimerDisplay();
+        if (gameState.elapsedSeconds % 5 === 0) saveState();
+      }, 1000);
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+      const mins = String(Math.floor(gameState.elapsedSeconds / 60)).padStart(2, "0");
+      const secs = String(gameState.elapsedSeconds % 60).padStart(2, "0");
+      document.getElementById("timerDisplay").innerText = `${mins}:${secs}`;
+    }
+
+    // ------------------------------------------------------
+    // 4. 단서 그리드 렌더링
+    // ------------------------------------------------------
     function renderClueGrid() {
       const grid = document.getElementById("clueGrid");
       grid.innerHTML = "";
-      CLUES_DATA.forEach(c => {
-        const isF = gameState.cluesFound.includes(c.id);
-        const el = document.createElement("div");
-        el.className = `p-3 rounded-xl border cursor-pointer ${isF ? "bg-slate-800 border-cyan-500" : "bg-slate-900 border-slate-700 opacity-70"}`;
-        el.onclick = () => isF ? alert(`[단서 #${c.id}]\n${c.clueText}`) : alert("QR 스캔으로 해제하세요! (또는 테스트용 1~8 입력)");
-        el.innerHTML = `<div class="flex justify-between text-xs font-bold mb-1"><span class="${isF?'text-cyan-400':'text-slate-500'}">STAGE ${c.id}</span><span>${isF?c.icon:'🔒'}</span></div><div class="text-[11px] font-semibold truncate ${isF?'text-white':'text-slate-400'}">${isF?c.title:'잠김'}</div>`;
-        grid.appendChild(el);
-      });
-    }
 
-    function updateDashboardUI() {
-      document.getElementById("teamNameDisplay").innerText = gameState.teamName || "대기중";
-      const count = gameState.cluesFound.length;
-      document.getElementById("progressText").innerText = `${count} / 8`;
-      document.getElementById("progressBar").style.width = `${Math.round((count/8)*100)}%`;
-      const btn = document.getElementById("finalQuizBtn");
-      if (count >= 8) {
-        btn.disabled = false; btn.className = "py-3 px-4 bg-amber-600 hover:bg-amber-500 text-slate-900 font-extrabold rounded-xl flex items-center justify-center space-x-2 text-sm animate-pulse";
-      }
-    }
+      let count = 0;
+      CLUE_CONFIG.forEach(clue => {
+        const isUnlocked = gameState.unlockedClues.includes(clue.id);
+        if (isUnlocked) count++;
 
-    // QR & 모달 로직
-    function openScannerModal() { document.getElementById("scannerModal").classList.remove("hidden"); html5QrCode = new Html5Qrcode("qr-reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, (t) => { handleDetectedCode(t); closeScannerModal(); }, ()=>{}); }
-    function closeScannerModal() { if(html5QrCode) html5QrCode.stop().then(()=>html5QrCode.clear()); document.getElementById("scannerModal").classList.add("hidden"); }
-    function submitManualClue() { handleDetectedCode(document.getElementById("manualClueInput").value); document.getElementById("manualClueInput").value=""; closeScannerModal(); }
-    function handleDetectedCode(t) {
-      let id = parseInt(t.replace(/[^0-9]/g, ''));
-      if(id>=1 && id<=8) openMiniGame(id); else alert("잘못된 QR입니다.");
-    }
+        const card = document.createElement("div");
+        card.className = `p-3 rounded-xl border flex flex-col justify-between transition cursor-pointer ${
+          isUnlocked 
+            ? "bg-slate-900 border-rose-500/40 shadow-md shadow-rose-950/30" 
+            : "bg-slate-900/40 border-slate-800 opacity-60"
+        }`;
+        card.onclick = () => openClueDetail(clue.id);
 
-    function openMiniGame(id) {
-      currentPlayingId = id;
-      const c = CLUES_DATA.find(x => x.id === id);
-      document.getElementById("gameModalStage").innerText = c.stage;
-      document.getElementById("gameModalTitle").innerText = c.title;
-      document.getElementById("gameModalMission").innerText = c.mission;
-      document.getElementById("acquiredClueText").innerText = c.clueText;
-      document.getElementById("clueAcquireArea").classList.add("hidden");
-      
-      const cont = document.getElementById("gamePlayContainer");
-      cont.innerHTML = "";
-      switch(id) { case 1: rG1(cont); break; case 2: rG2(cont); break; case 3: rG3(cont); break; case 4: rG4(cont); break; case 5: rG5(cont); break; case 6: rG6(cont); break; case 7: rG7(cont); break; case 8: rG8(cont); break; }
-      document.getElementById("miniGameModal").classList.remove("hidden");
-    }
-
-    function closeMiniGameModal() { clearInterval(gSwInterval); document.getElementById("miniGameModal").classList.add("hidden"); }
-    function onClear() { document.getElementById("clueAcquireArea").classList.remove("hidden"); }
-    function saveAndCollectClue() {
-      if(!gameState.cluesFound.includes(currentPlayingId)) { gameState.cluesFound.push(currentPlayingId); saveState(); renderClueGrid(); updateDashboardUI(); }
-      closeMiniGameModal();
-    }
-
-    // ================= [게임 1] 9개 중 4개 정확히 찾기 =================
-    function rG1(container) {
-      const data = [
-        { t: "가입 즉시 5만 지급! 조건 없음", bad: true }, { t: "오늘 급식 JMT ㅋㅋ", bad: false }, { t: "수학 수행평가 범위 아는 사람?", bad: false },
-        { t: "첫충 100% 매충 20% 안전공원", bad: true }, { t: "아이돌 콘서트 티켓팅 성공!", bad: false }, { t: "신분증 없이 급전 10만원 당일 지급", bad: true },
-        { t: "비트코인 갤러리 레전드 사건.txt", bad: false }, { t: "가족방에서 유출픽 무료로 드립니다", bad: true }, { t: "넷플릭스 영화 추천 좀", bad: false }
-      ];
-      // 섞기
-      data.sort(() => Math.random() - 0.5);
-      let found = 0;
-      
-      let html = `<div class="grid grid-cols-2 gap-2 text-[10px] leading-tight">`;
-      data.forEach((item, i) => {
-        html += `<div id="g1-item-${i}" onclick="g1Click(${i}, ${item.bad})" class="p-2 bg-slate-800 border border-slate-700 rounded-lg cursor-pointer hover:bg-slate-700 active:scale-95 transition-all">${item.t}</div>`;
-      });
-      html += `</div><p id="g1-msg" class="mt-3 text-center text-xs text-amber-400 font-bold">찾은 불법 광고: 0 / 4</p>`;
-      container.innerHTML = html;
-
-      window.g1Click = (i, isBad) => {
-        const el = document.getElementById(`g1-item-${i}`);
-        if(el.classList.contains("opacity-50")) return;
-        
-        if(!isBad) {
-          alert("틀렸습니다! 정상적인 게시물을 선택했습니다. 처음부터 다시 시작합니다.");
-          rG1(container);
-          return;
-        }
-        
-        el.classList.add("opacity-50", "border-rose-500", "bg-rose-900");
-        found++;
-        document.getElementById("g1-msg").innerText = `찾은 불법 광고: ${found} / 4`;
-        if(found === 4) {
-          document.getElementById("g1-msg").innerText = "완벽합니다! 불법 유인 광고를 모두 걸러냈습니다.";
-          document.getElementById("g1-msg").className = "mt-3 text-center text-xs text-emerald-400 font-bold";
-          onClear();
-        }
-      };
-    }
-
-    // ================= [게임 2] 알고리즘 추론 (사다리 조작 예측) =================
-    function rG2(container) {
-      let stage = 1;
-      const questions = [
-        { q: "유저 100명이 '홀'에 총 500만원 배팅, 유저 10명이 '짝'에 총 50만원 배팅. 시스템은 어느 쪽이 나오게 조작할까요?", a: "짝" },
-        { q: "VIP 한 명이 '홀'에 1000만원, 일반 유저 500명이 '짝'에 200만원 배팅. 시스템의 선택은?", a: "짝" },
-        { q: "결국 시스템 운영자가 돈을 잃을 확률은 몇 %일까요? (숫자만 입력)", a: "0" }
-      ];
-      
-      const renderStage = () => {
-        if(stage > 3) {
-          container.innerHTML = `<div class="text-center text-emerald-400 font-bold mt-5">모든 조작 알고리즘을 파악했습니다!</div>`;
-          onClear(); return;
-        }
-        const q = questions[stage-1];
-        container.innerHTML = `
-          <div class="bg-slate-950 p-4 rounded-xl border border-slate-700">
-            <span class="text-cyan-400 font-bold text-xs">ROUND ${stage}</span>
-            <p class="text-sm text-slate-200 mt-2 mb-4 leading-relaxed">${q.q}</p>
-            <div class="flex space-x-2">
-              <input id="g2-ans" type="text" placeholder="정답 입력" class="flex-1 bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white" />
-              <button onclick="g2Check('${q.a}')" class="px-4 py-2 bg-cyan-700 text-white font-bold rounded">확인</button>
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                isUnlocked ? "bg-rose-500/20 text-rose-400" : "bg-slate-800 text-slate-500"
+              }">단서 ${clue.id}</span>
+              <i class="fa-solid ${isUnlocked ? "fa-unlock text-rose-400" : "fa-lock text-slate-600"} text-xs"></i>
             </div>
+            <h4 class="text-xs font-bold ${isUnlocked ? "text-slate-100" : "text-slate-500"} line-clamp-1">${clue.title}</h4>
+            <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">${isUnlocked ? clue.desc : "미션을 해결하여 단서를 획득하세요."}</p>
+          </div>
+          <div class="mt-3 text-[10px] font-bold text-right ${isUnlocked ? "text-rose-400" : "text-slate-600"}">
+            ${isUnlocked ? "내용 확인하기 →" : "🔒 잠김"}
           </div>
         `;
-      };
-      renderStage();
-
-      window.g2Check = (ans) => {
-        const v = document.getElementById("g2-ans").value.trim();
-        if(v === ans) { stage++; renderStage(); }
-        else { alert("틀렸습니다! 운영자의 악독한 수익 구조를 다시 생각해보세요. 처음으로 돌아갑니다."); stage = 1; renderStage(); }
-      };
-    }
-
-    // ================= [게임 3] 블라인드 스탑워치 =================
-    function rG3(container) {
-      gSwRunning = false;
-      container.innerHTML = `
-        <div class="text-center py-6 space-y-5">
-          <div id="swBox" class="font-mono text-4xl font-extrabold text-amber-400">0.00 초</div>
-          <button id="swBtn" onclick="toggleG3()" class="px-8 py-3 bg-amber-600 text-white font-bold rounded-xl shadow-lg">타이머 시작</button>
-          <p id="swMsg" class="text-xs text-slate-400">7.70 ~ 7.85초 사이를 노리세요!</p>
-        </div>
-      `;
-      window.toggleG3 = () => {
-        const box = document.getElementById("swBox"), btn = document.getElementById("swBtn"), msg = document.getElementById("swMsg");
-        if(!gSwRunning) {
-          gSwRunning = true; gSwStartTime = Date.now();
-          btn.innerText = "S T O P"; btn.className = "px-8 py-3 bg-rose-600 text-white font-bold rounded-xl shadow-lg";
-          msg.innerText = "3초 뒤 숫자가 사라집니다. 감각을 믿으세요!";
-          gSwInterval = setInterval(() => {
-            const ms = Date.now() - gSwStartTime;
-            if(ms > 3000) { box.innerText = "?.?? 초"; box.classList.add("opacity-50"); }
-            else { box.innerText = (ms/1000).toFixed(2) + " 초"; }
-          }, 30);
-        } else {
-          gSwRunning = false; clearInterval(gSwInterval);
-          const finalVal = ((Date.now() - gSwStartTime)/1000).toFixed(2);
-          box.innerText = finalVal + " 초"; box.classList.remove("opacity-50");
-          btn.innerText = "다시 시도"; btn.className = "px-8 py-3 bg-slate-700 text-white font-bold rounded-xl";
-          if(finalVal >= 7.70 && finalVal <= 7.85) {
-            msg.innerText = `성공! 통제의 착각을 이겨냈습니다.`; msg.className = "text-xs text-emerald-400 font-bold mt-2";
-            onClear();
-          } else {
-            msg.innerText = `실패! 생각보다 어렵죠? 다시 도전하세요.`; msg.className = "text-xs text-rose-400 mt-2";
-          }
-        }
-      };
-    }
-
-    // ================= [게임 4] 사채 이자 수학 계산 =================
-    function rG4(container) {
-      container.innerHTML = `
-        <div class="text-xs space-y-3 leading-relaxed">
-          <div class="p-3 bg-slate-800 rounded border border-slate-600">
-            [대출 장부]<br/>
-            - 원금: 50,000원<br/>
-            - 이자: 매일(24h기준) 10,000원<br/>
-            - 지각비: 늦은 시간 당 5,000원 추가<br/><br/>
-            <span class="text-amber-400">* A는 3일 늦었고, 추가로 5시간 더 늦었다. (총 77시간 경과)</span>
-          </div>
-          <p>A가 갚아야 할 최종 금액은 얼마인가요? (원금 + 이자 + 지각비)</p>
-          <input id="g4-input" type="number" placeholder="숫자만 입력" class="w-full bg-slate-900 border border-cyan-500 rounded p-3 text-lg font-mono text-center text-white" />
-          <button onclick="g4Check()" class="w-full py-3 bg-cyan-700 font-bold rounded-lg text-white mt-2">정답 제출</button>
-        </div>
-      `;
-      window.g4Check = () => {
-        // 원금 50000 + 이자(10000*3=30000) + 지각비(5000*5=25000) = 105,000
-        const v = document.getElementById("g4-input").value;
-        if(v == "105000") {
-          alert("정답입니다. 단 5만원이 며칠 만에 10만 5천원이 되는 불법 사채입니다.");
-          onClear();
-        } else {
-          alert("계산이 틀렸습니다. 다시 계산해 보세요.");
-        }
-      };
-    }
-
-    // ================= [게임 5] 마스터마인드 (숫자야구) =================
-    function rG5(container) {
-      // 0~9 중 3자리 난수 (중복 없음)
-      let digits = [0,1,2,3,4,5,6,7,8,9];
-      digits.sort(()=>Math.random()-0.5);
-      mastermindAnswer = digits.slice(0,3);
-      mastermindTries = 0;
-
-      container.innerHTML = `
-        <div class="text-center text-xs">
-          <p class="text-slate-400 mb-3">0~9 중복 없는 3자리 번호를 입력해 해킹하세요.</p>
-          <div class="flex space-x-2 mb-3">
-            <input id="g5-in" type="number" oninput="if(this.value.length>3) this.value=this.value.slice(0,3);" placeholder="예: 123" class="flex-1 bg-slate-800 border border-slate-600 rounded p-2 text-center text-lg font-mono tracking-widest text-white" />
-            <button onclick="g5Guess()" class="px-4 bg-emerald-600 font-bold rounded text-white">입력</button>
-          </div>
-          <div id="g5-log" class="h-40 overflow-y-auto bg-slate-950 p-2 rounded border border-slate-800 text-left space-y-1 font-mono"></div>
-        </div>
-      `;
-
-      window.g5Guess = () => {
-        const val = document.getElementById("g5-in").value;
-        if(val.length !== 3 || new Set(val.split('')).size !== 3) return alert("중복 없는 3자리 숫자를 입력하세요!");
-        
-        mastermindTries++;
-        let s = 0, b = 0;
-        const arr = val.split('').map(Number);
-        
-        arr.forEach((num, i) => {
-          if(num === mastermindAnswer[i]) s++;
-          else if(mastermindAnswer.includes(num)) b++;
-        });
-
-        const log = document.getElementById("g5-log");
-        log.innerHTML += `<div>[${mastermindTries}회차] <span class="text-cyan-400">${val}</span> ➔ <span class="text-amber-400">${s}S ${b}B</span></div>`;
-        log.scrollTop = log.scrollHeight;
-        document.getElementById("g5-in").value = "";
-
-        if(s === 3) {
-          alert("해킹 성공! 통화 내역이 복원되었습니다."); onClear();
-        } else if (mastermindTries >= 10) {
-          alert("입력 횟수 초과! 시스템이 초기화됩니다. 번호가 바뀝니다.");
-          rG5(container);
-        }
-      };
-    }
-
-    // ================= [게임 6] 플래시라이트 =================
-    function rG6(container) {
-      container.innerHTML = `
-        <div class="relative w-full h-48 bg-slate-900 border border-slate-700 rounded-xl overflow-hidden touch-none" id="flash-box">
-          <!-- 숨겨진 배경 내용 -->
-          <div class="absolute inset-0 p-4 text-xs font-mono font-bold text-amber-500 bg-slate-800" style="background-image: repeating-linear-gradient(45deg, #1e293b 25%, transparent 25%, transparent 75%, #1e293b 75%, #1e293b), repeating-linear-gradient(45deg, #1e293b 25%, #0f172a 25%, #0f172a 75%, #1e293b 75%, #1e293b); background-size: 20px 20px;">
-            <span class="absolute top-4 left-4 text-xl">1</span>
-            <span class="absolute bottom-6 right-10 text-xl">3</span>
-            <span class="absolute top-1/2 left-1/3 text-xl">3</span>
-            <span class="absolute bottom-2 left-2 text-xl">6</span>
-          </div>
-          <!-- 암전 오버레이 (마스크) -->
-          <div id="flash-overlay" class="flashlight-overlay"></div>
-        </div>
-        <div class="mt-3 flex space-x-2">
-          <input id="g6-ans" type="number" placeholder="어둠 속 숫자 4개 조합" class="flex-1 bg-slate-900 border border-slate-600 rounded p-2 text-center" />
-          <button onclick="g6Check()" class="px-4 bg-cyan-700 font-bold rounded">확인</button>
-        </div>
-      `;
-
-      const box = document.getElementById("flash-box");
-      const overlay = document.getElementById("flash-overlay");
-      
-      const updateLight = (e) => {
-        const rect = box.getBoundingClientRect();
-        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-        overlay.style.setProperty('--x', x + 'px');
-        overlay.style.setProperty('--y', y + 'px');
-      };
-
-      box.addEventListener("mousemove", updateLight);
-      box.addEventListener("touchmove", (e)=>{ e.preventDefault(); updateLight(e); });
-
-      window.g6Check = () => {
-        if(document.getElementById("g6-ans").value === "1336") { alert("정답입니다!"); onClear(); }
-        else alert("틀렸습니다. 어둠 속을 더 꼼꼼히 탐색하세요.");
-      };
-    }
-
-    // ================= [게임 7] 12장 메모리 카드 =================
-    function rG7(container) {
-      const icons = ['🃏', '🎲', '🎰', '💸', '💔', '🆘'];
-      let deck = [...icons, ...icons].sort(() => Math.random() - 0.5);
-      memoryFlipped = []; memoryMatched = 0;
-
-      let html = `<div class="grid grid-cols-4 gap-2 h-48 perspective-1000">`;
-      deck.forEach((icon, i) => {
-        html += `
-          <div id="mc-${i}" onclick="g7Flip(${i}, '${icon}')" class="memory-card relative w-full h-full">
-            <div class="memory-card-inner">
-              <div class="memory-card-front text-2xl">?</div>
-              <div class="memory-card-back text-2xl">${icon}</div>
-            </div>
-          </div>`;
+        grid.appendChild(card);
       });
-      html += `</div>`;
-      container.innerHTML = html;
 
-      window.g7Flip = (idx, icon) => {
-        const el = document.getElementById(`mc-${idx}`);
-        if(el.classList.contains("flipped") || memoryFlipped.length >= 2) return;
-        
-        el.classList.add("flipped");
-        memoryFlipped.push({ idx, icon, el });
-
-        if(memoryFlipped.length === 2) {
-          if(memoryFlipped[0].icon === memoryFlipped[1].icon) {
-            memoryMatched++;
-            memoryFlipped = [];
-            if(memoryMatched === 6) {
-              setTimeout(() => { alert("모든 카드의 짝을 맞췄습니다!"); onClear(); }, 500);
-            }
-          } else {
-            setTimeout(() => {
-              memoryFlipped[0].el.classList.remove("flipped");
-              memoryFlipped[1].el.classList.remove("flipped");
-              memoryFlipped = [];
-            }, 800);
-          }
-        }
-      };
+      document.getElementById("clueProgressText").innerText = `${count} / 8 수집 완료`;
     }
 
-    // ================= [게임 8] 최종 논리 조합 =================
-    function rG8(container) {
-      container.innerHTML = `
-        <div class="text-[11px] space-y-3 leading-relaxed">
-          <p class="text-slate-300">이전 게임들의 정답 데이터를 조합해 다이얼을 여세요.</p>
-          <div class="bg-slate-950 p-2 rounded border border-slate-700 font-mono text-cyan-300">
-            1. 게임 1에서 찾아낸 불법 광고의 개수<br/>
-            2. 게임 4에서 A가 지각한 날짜 수<br/>
-            3. 게임 4에서 A가 늦은 추가 시간 수 - 날짜 수 + 1<br/>
-            4. 게임 7에서 완성한 카드 쌍의 개수
-          </div>
-          <div class="flex space-x-2 mt-3">
-            <input id="g8-ans" type="text" maxlength="4" placeholder="4자리 조합" class="flex-1 bg-slate-900 border border-slate-600 rounded p-2 text-center text-lg font-bold tracking-widest text-amber-400" />
-            <button onclick="g8Check()" class="px-4 bg-amber-600 text-slate-900 font-bold rounded">해제</button>
-          </div>
-        </div>
-      `;
-      window.g8Check = () => {
-        // 1번 게임 정답: 4
-        // 4번 게임 날짜: 3 (3일) -> 3
-        // 4번 게임 (추가 5시간 - 날짜3 + 1) = 3
-        // 7번 게임 쌍: 6
-        // Answer: 4336 ? NO, wait. The prompt says final answer is 1336. 
-        // Let's adjust the riddles to equal 1-3-3-6!
-        // Riddle 1: 게임 1에서 찾아낸 불법 광고의 개수 (4) - 3 = 1
-        // Riddle 2: 게임 4에서 A가 지각한 날짜 수 = 3
-        // Riddle 3: 게임 4에서 A가 지각한 날짜 수 = 3
-        // Riddle 4: 게임 7에서 완성한 카드 쌍의 개수 = 6
-        const ans = document.getElementById("g8-ans").value;
-        if(ans === "1336") {
-          alert("철컥! 모든 암호가 풀렸습니다."); onClear();
-        } else {
-          alert("힌트:\n첫자리: 게임1 정답(4) - 3\n두번째: 게임4 지각 일수\n세번째: 게임4 지각 일수\n네번째: 게임7 정답 수");
-        }
-      };
-    }
-
-    // ================= 최종 퀴즈 및 유틸리티 =================
-    function openFinalQuizModal() {
-      if(gameState.cluesFound.length < 8) return alert("단서가 부족합니다!");
-      document.getElementById("finalQuizModal").classList.remove("hidden");
-    }
-    function closeFinalQuizModal() { document.getElementById("finalQuizModal").classList.add("hidden"); }
-    function submitFinalQuizAnswer() {
-      const v = document.getElementById("finalQuizAnswerInput").value;
-      if(v === "1336") {
-        closeFinalQuizModal();
-        gameState.isFinished = true; clearInterval(timerInterval);
-        const d = Math.floor((Date.now() - gameState.startTime) / 1000);
-        gameState.clearDuration = `${Math.floor(d/60)}분 ${d%60}초`;
-        saveState();
-        document.getElementById("certTeamName").innerText = gameState.teamName;
-        document.getElementById("certClearTime").innerText = gameState.clearDuration;
-        document.getElementById("endingModal").classList.remove("hidden");
-        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-      } else {
-        document.getElementById("quizErrorMsg").classList.remove("hidden");
+    function checkAllCluesUnlocked() {
+      const btn = document.getElementById("finalDeductionBtn");
+      if (gameState.unlockedClues.length >= 8 && !gameState.isFinished) {
+        btn.disabled = false;
+        btn.className = "w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition duration-300 bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-950 animate-pulse";
+        btn.innerHTML = `<i class="fa-solid fa-brain"></i> <span>최종 수사 결론 도출하기 (해금됨)</span>`;
       }
     }
-    function closeEndingModal() { document.getElementById("endingModal").classList.add("hidden"); }
-    function confirmResetData() {
-      if(confirm("모든 데이터를 지우고 처음부터 시작하시겠습니까?")) {
-        localStorage.removeItem("disconnect_hard_state"); location.reload();
+
+    // ------------------------------------------------------
+    // 5. 단서 상세 확인 모달
+    // ------------------------------------------------------
+    function openClueDetail(id) {
+      const clue = CLUE_CONFIG.find(c => c.id === id);
+      if (!clue) return;
+
+      const isUnlocked = gameState.unlockedClues.includes(id);
+      document.getElementById("detailBadge").innerText = `단서 ${clue.id}`;
+      document.getElementById("detailTitle").innerText = clue.title;
+
+      const body = document.getElementById("detailBody");
+      if (isUnlocked) {
+        body.innerHTML = `
+          <p class="text-slate-400 mb-2">${clue.desc}</p>
+          ${clue.content}
+        `;
+      } else {
+        body.innerHTML = `
+          <div class="text-center py-8 space-y-3">
+            <i class="fa-solid fa-lock text-3xl text-slate-600"></i>
+            <p class="text-xs text-slate-400">아직 해금되지 않은 단서입니다.<br>미션을 클리어하고 QR 또는 암호 코드를 입력하세요.</p>
+            <div class="text-[11px] text-amber-500/80 font-bold">인증 방식: [${clue.unlockType === "QR" ? "QR 스캔" : "암호 코드 입력"}]</div>
+          </div>
+        `;
+      }
+      document.getElementById("clueDetailModal").classList.remove("hidden");
+    }
+
+    function closeDetailModal() {
+      document.getElementById("clueDetailModal").classList.add("hidden");
+    }
+
+    // ------------------------------------------------------
+    // 6. 단서 해금 처리 (QR 및 코드 입력 공통)
+    // ------------------------------------------------------
+    function unlockClueByCode(rawInput) {
+      if (!rawInput) return;
+      const cleanInput = rawInput.trim().toUpperCase();
+
+      const matchedClue = CLUE_CONFIG.find(c => c.code.toUpperCase() === cleanInput);
+      if (matchedClue) {
+        if (!gameState.unlockedClues.includes(matchedClue.id)) {
+          gameState.unlockedClues.push(matchedClue.id);
+          saveState();
+          confetti({ particleCount: 50, spread: 60 });
+          alert(`[단서 ${matchedClue.id}: ${matchedClue.title}] 해금 성공!`);
+          openClueDetail(matchedClue.id);
+        } else {
+          alert("이미 해금된 단서입니다.");
+          openClueDetail(matchedClue.id);
+        }
+        return true;
+      } else {
+        alert("일치하는 단서 코드를 찾을 수 없습니다. 다시 확인해 주세요.");
+        return false;
+      }
+    }
+
+    // 암호 수동 모달
+    function openManualCodeModal() {
+      document.getElementById("codeModal").classList.remove("hidden");
+      document.getElementById("manualCodeInput").focus();
+    }
+    function closeManualCodeModal() {
+      document.getElementById("codeModal").classList.add("hidden");
+      document.getElementById("manualCodeInput").value = "";
+    }
+    function submitManualCode() {
+      const code = document.getElementById("manualCodeInput").value;
+      if (unlockClueByCode(code)) {
+        closeManualCodeModal();
+      }
+    }
+
+    // ------------------------------------------------------
+    // 7. QR 코드 스캔 (html5-qrcode)
+    // ------------------------------------------------------
+    function openScannerModal() {
+      document.getElementById("qrModal").classList.remove("hidden");
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        (decodedText) => {
+          // 스캔 성공 시
+          closeScannerModal();
+          unlockClueByCode(decodedText);
+        },
+        (errorMessage) => {
+          // 탐색 중 오류 무시
+        }
+      ).catch(err => {
+        alert("카메라 권한을 허용할 수 없거나 지원하지 않는 브라우저입니다.");
+        closeScannerModal();
+      });
+    }
+
+    function closeScannerModal() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          html5QrCode.clear();
+          document.getElementById("qrModal").classList.add("hidden");
+        }).catch(() => {
+          document.getElementById("qrModal").classList.add("hidden");
+        });
+      } else {
+        document.getElementById("qrModal").classList.add("hidden");
+      }
+    }
+
+    // ------------------------------------------------------
+    // 8. 최종 9단계 추리 결정 및 제출
+    // ------------------------------------------------------
+    function openFinalModal() {
+      document.getElementById("finalModal").classList.remove("hidden");
+    }
+    function closeFinalModal() {
+      document.getElementById("finalModal").classList.add("hidden");
+    }
+
+    function submitFinalDeduction() {
+      const q1 = document.getElementById("answerQ1").value;
+      const q2 = document.getElementById("answerQ2").value;
+      const q3 = document.getElementById("answerQ3").value;
+
+      if (!q1 || !q2 || !q3) {
+        alert("모든 문항의 결론을 선택해 주세요.");
+        return;
+      }
+
+      // 정답 검증 (기획서 결말 일치 확인)
+      // Q1: B (온라인 불법 도박 중독 및 이에 따른 학교폭력)
+      // Q2: A (추천인 B & 고리대금 갈취 C)
+      // Q3: C (PC방 친구 준혁의 집)
+      if (q1 === "B" && q2 === "A" && q3 === "C") {
+        clearInterval(timerInterval);
+        gameState.isFinished = true;
+        saveState();
+
+        closeFinalModal();
+        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+
+        const mins = String(Math.floor(gameState.elapsedSeconds / 60)).padStart(2, "0");
+        const secs = String(gameState.elapsedSeconds % 60).padStart(2, "0");
+        document.getElementById("finalClassDisplay").innerText = gameState.className;
+        document.getElementById("finalTimeDisplay").innerText = `${mins}분 ${secs}초`;
+        document.getElementById("endingModal").classList.remove("hidden");
+
+        // 구글 스프레드시트 기록 전송 (Webhook 연동 준비)
+        sendToGoogleSheet(gameState.className, `${mins}:${secs}`);
+      } else {
+        alert("수사 결론이 단서들의 내용과 일치하지 않습니다! 단서들을 다시 정밀하게 분석해 보세요.");
+      }
+    }
+
+    // ------------------------------------------------------
+    // 9. 구글 스프레드시트 실시간 전송 (선택 사항)
+    // ------------------------------------------------------
+    function sendToGoogleSheet(className, clearTime) {
+      // 본인의 Google Apps Script 웹 앱 배포 URL을 입력하면 실시간 전송됩니다.
+      const SCRIPT_URL = ""; 
+      if (!SCRIPT_URL) return;
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          className: className,
+          clearTime: clearTime,
+          timestamp: new Date().toLocaleString()
+        })
+      }).catch(err => console.error("Sheet send error", err));
+    }
+
+    // 초기화 함수
+    function resetDataPrompt() {
+      if (confirm("현재 학급의 수사 기록을 초기화하고 처음부터 다시 시작하시겠습니까?")) {
+        localStorage.removeItem("dokeun_case_state");
+        location.reload();
       }
     }
   </script>
